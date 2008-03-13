@@ -1,0 +1,16 @@
+CS 241;cs;green
+	Tues,Thurs;1:00-2:20
+	Fri;11:30-12:20
+JAPAN 101;japan;yellow
+	Wed;1:30-2:20
+	Wed;2:30-4:20
+MATH 136;algebra;blue
+	Mon;3:30-4:20
+	Mon,Wed,Fri;8:30-9:20
+MATH 138;calc;red
+	Mon,Wed,Fri;10:30-11:20
+	Wed;4:30-5:20
+PHYS 122;phys;black
+	Mon,Wed,Fri;12:30-1:20
+	Tues;3:30-4:20
+
