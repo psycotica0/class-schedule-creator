@@ -9,12 +9,20 @@
 proc ReadFile {in out} {
 	set currentCourse ""
 	foreach line [split [read $in] \n] {
-		if {[regexp {^\w} $line]} {
+		if {[regexp {^#} $line]} {
+			#This is a comment line
+			continue
+		} elseif {[regexp {^\w} $line]} {
 			#This is the start of a new course
 			foreach {Name Command Colour} [split $line ";"] {}
 			set currentCourse $Command
-			puts $out "\\newcommand\{\\$Command\}\{\\colorbox\{$Colour\}\{$Name\}\}"
-		} else {
+			if {[string equal $Colour black]} {
+				set TextColour {\color{white}}
+			} else {
+				set TextColour ""
+			}
+			puts $out "\\newcommand\{\\$Command\}\{\\colorbox\{$Colour\}\{$TextColour$Name\}\}"
+		} elseif {[regexp {^\t} $line]} {
 			#This is a new date for the current course
 			set lineM [string trim $line]
 			set broken [split $lineM ";"]
@@ -34,17 +42,18 @@ proc ReadFile {in out} {
 #	start: This is the start of the block the commands should be put in
 #	end: This is the end of the block the commands should end in
 ###
-proc AddTime {command, dates, start, end} {
+proc AddTime {command dates start end} {
 	global Schedule
 	#Use the blocks to calculate which item should be changed
 	set Blocks [TimeIndex $start $end]
 	set sBlock [lindex $Blocks 0]
 	set eBlock [lindex $Blocks 1]
+	puts "$sBlock $eBlock"
 	#Use a foreach loop to go through each day
 	foreach day $dates {
 		#Foreach day set the precalculated blocks to the given command
 		for {set i $sBlock} {$i <= $eBlock} {incr i} {
-			set Schedule($day) "\\$command"
+			set Schedule($day) [lreplace $Schedule($day) $i $i "\\$command"]
 		}
 	}
 }
@@ -62,14 +71,13 @@ proc TimeIndex {start end} {
  regexp {(\d+):(\d+)} $end Mat eH eM
  #foreach {sH sM} [split $start ":"] {}
  #foreach {eH eM} [split $end ":"] {}
- incr sH
  foreach c [list s e] {
-	set Command "set sH \[expr \{${c}H+12\}\]"
- 	if "\$${c}H >=1 && \$${c}H <8}" $Command
-	 #First set the index to the hours minus 8 (The first time) times to (to skip all the 30s)
+	set Command "set ${c}H \[expr \{\$${c}H+12\}\]"
+ 	if "\$${c}H >=1 && \$${c}H <8" $Command
+	 #First set the index to the hours minus 8 (The first time) times 2 to (to skip all the 30s)
 	 set Command "set ${c}Index \[expr \{(\$${c}H-8)*2\}\]"
 	 #Then, if the minutes are larger than 30, add another block
-	 set Command2 [list if "\$${c}M>30" "incr ${c}Index"]
+	 set Command2 [list if "\$${c}M>=30" "incr ${c}Index"]
 	 eval $Command
 	 eval $Command2
 	 #Finally, add 1 to them both to account for the title bar
@@ -79,6 +87,28 @@ proc TimeIndex {start end} {
  return [list $sIndex $eIndex]
 }
 
+###
+#PrintChart: This is the part that prints out the chart and ends the file
+#
+#	out: This is the open handle to the output file
+###
+proc PrintChart {out} {
+	global Schedule
+	puts $out {\begin{tabular}{|c|c|c|c|c|c|}
+	\hline
+	}
+	for {set i 0} {$i < [llength $Schedule("0")] } {incr i} {
+		#Print the time
+		puts -nonewline $out [lindex $Schedule("0") $i]
+		foreach column [list Mon Tues Wed Thurs Fri] {
+			puts -nonewline $out "&[lindex $Schedule($column) $i]"
+		}
+		puts $out {\\\hline}
+	}
+	puts $out {\end{tabular}
+	\end{document}
+	}
+}
 
 ###
 #Setup: This starts the output by adding the top parts of the file.
@@ -100,18 +130,24 @@ proc Setup {out} {
 	 \end {center}
 	}
 	#Set up the array
-	set Schedule("0") ""
-	for {set i 8} {$i <= 12} {incr i} {
-		lappend Schedule("0") $i:00 $i:30
-	}
-	for {set i 1} {$i <= 7} {incr i} {
-		lappend Schedule("0") $i:00 $i:30
-	}
+	set Schedule("0") [list " "]
 	set Schedule(Mon) "Monday"
 	set Schedule(Tues) "Tuesday"
 	set Schedule(Wed) "Wednesday"
 	set Schedule(Thurs) "Thursday"
 	set Schedule(Fri) "Friday"
+	for {set i 8} {$i <= 12} {incr i} {
+		lappend Schedule("0") $i:00 $i:30
+		foreach day [list Mon Tues Wed Thurs Fri] {
+			lappend Schedule($day) " " " "
+		}
+	}
+	for {set i 1} {$i <= 7} {incr i} {
+		lappend Schedule("0") $i:00 $i:30
+		foreach day [list Mon Tues Wed Thurs Fri] {
+			lappend Schedule($day) " " " "
+		}
+	}
 }
 ###############Main###############
 if {![file exists Schedule.txt]} {
@@ -122,3 +158,6 @@ set In [open Schedule.txt r]
 set Out [open Schedule.tex w]
 Setup $Out
 ReadFile $In $Out
+PrintChart $Out
+close $Out
+close $In

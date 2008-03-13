@@ -1,3 +1,4 @@
+#Acceptable Colours: white black(with white text) red green blue cyan magenta yellow
 CS 241;cs;green
 	Tues,Thurs;1:00-2:20
 	Fri;11:30-12:20
