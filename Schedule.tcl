@@ -48,7 +48,6 @@ proc AddTime {command dates start end} {
 	set Blocks [TimeIndex $start $end]
 	set sBlock [lindex $Blocks 0]
 	set eBlock [lindex $Blocks 1]
-	puts "$sBlock $eBlock"
 	#Use a foreach loop to go through each day
 	foreach day $dates {
 		#Foreach day set the precalculated blocks to the given command
