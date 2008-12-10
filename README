@@ -1,0 +1,23 @@
+This program reads in a file called Schedule.txt in the current directory and outputs Schedule.tex.
+
+This Schedule.tex file is a table that shows the stuff scheduled.
+
+
+It's pretty raw, but that's because I just wrote it to be for me.
+You can have it if you like.
+
+Schedule.txt Syntax:
+Name To Be Displayed;uniqueId;colour
+	Mon,Tues;10:00-12:20
+
+Where I don't think the uniqueId can have spaces or any weird characters.
+I think internally it is used as a variable name...
+Colour can be white black(with white text) red green blue cyan magenta yellow
+
+Example Schedule.txt:
+CS 246;cs;green
+	Tues,Thurs;10:00-11:20
+	Mon;11:30-12:20
+STAT 230;stat;blue
+	Mon,Wed,Fri;12:30-1:20
+	Wed;3:30-4:20
