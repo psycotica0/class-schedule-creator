@@ -180,7 +180,7 @@ proc PrintChart:html {out} {
 	puts $out "table {border: thin solid black}"
 	puts $out "td {border: thin solid black}"
 	puts $out ".time {font-weight:bold}"
-	puts $out ".day {font-wight:bold}"
+	puts $out ".day {font-weight:bold}"
 	#For each Course
 	foreach Course $Courses {
 		foreach {Name Command Colour TextColour} $Course {}
