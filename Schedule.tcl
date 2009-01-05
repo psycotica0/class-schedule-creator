@@ -149,14 +149,51 @@ proc Setup {out} {
 	}
 }
 ###############Main###############
-if {![file exists Schedule.txt]} {
-	puts "No Schedule.txt file"
-	return
+
+#Import cmdline
+package require cmdline
+#Pull in options
+set options [list \
+	[list t.arg "html" "This is the type of the output file. Currently Accepted values are html and tex."]\
+	[list f.arg "" "This is the filename of the input file. If not given, stdin is read."]\
+	[list o.arg "" "This is the filename of the output argument. If not given, stout is printed to."]\
+]
+set usage {
+This command takes in a file describing a schedule and outputs a representation of this schedule in the format specified.
+If no format is specified, it is output as an HTML table.
+Options:
 }
-set In [open Schedule.txt r]
-set Out [open Schedule.tex w]
+if {[catch {array set flags [::cmdline::getoptions argv $options $usage]} output]} {
+	puts $output
+	exit
+}
+
+#Make some global variables
+if {$flags(f) != ""} {
+	if {![file exists $flags(f)]} {
+		puts "Input file \"$flags(f)\" doesn't exist"
+		return
+	} else {
+		set In [open $flags(f) r]
+	}
+} else {
+	set In stdin
+}
+
+if {$flags(o) != ""} {
+	set Out [open $flags(o) w]
+} else {
+	set Out stdout 
+}
+
 Setup $Out
 ReadFile $In $Out
 PrintChart $Out
-close $Out
-close $In
+
+if {$Out != "stdout"} {
+	close $Out
+}
+
+if {$In != "stdin"} {
+	close $In
+}
