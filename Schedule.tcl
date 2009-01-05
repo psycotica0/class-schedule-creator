@@ -198,7 +198,7 @@ proc PrintChart:html {out} {
 	<body>
 		<center><h1>$Title</h1></center>
 		<body>"
-	puts $out "<table>"
+	puts $out "<center><table>"
 	#For each item in the first column
 	for {set i 0} {$i < [llength $Schedule("0")] } {incr i} {
 		#Start the row
@@ -225,7 +225,7 @@ proc PrintChart:html {out} {
 		#End the row
 		puts $out "</tr>"
 	}
-	puts $out "</table>"
+	puts $out "</table></center>"
 	puts $out "</body>"
 	puts $out "</html>"
 }
