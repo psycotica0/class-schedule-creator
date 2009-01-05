@@ -7,12 +7,13 @@
 #	out: This is a handle to an open output file
 ###
 proc ReadFile {in out} {
+	global Title
 	set currentCourse ""
 	foreach line [split [read $in] \n] {
 		if {[regexp {^#} $line]} {
 			#This is a comment line
 			continue
-		} elseif {[regexp {^\w} $line]} {
+		} elseif {[regexp {^[^\n;]+;[^\n;]+;[^\n;]+$} $line]} {
 			#This is the start of a new course
 			foreach {Name Command Colour} [split $line ";"] {}
 			set currentCourse $Command
@@ -22,13 +23,15 @@ proc ReadFile {in out} {
 				set TextColour ""
 			}
 			puts $out "\\newcommand\{\\$Command\}\{\\colorbox\{$Colour\}\{$TextColour$Name\}\}"
-		} elseif {[regexp {^\t} $line]} {
+		} elseif {[regexp {^[\t ]} $line]} {
 			#This is a new date for the current course
 			set lineM [string trim $line]
 			set broken [split $lineM ";"]
 			set dates [split [lindex $broken 0] ","]
 			set time [split [lindex $broken 1] "-"]
 			AddTime $currentCourse $dates [lindex $time 0] [lindex $time 1]
+		} elseif {[regexp {\w+} $line]} {
+			set Title $line
 		}
 	}
 }
@@ -93,6 +96,18 @@ proc TimeIndex {start end} {
 ###
 proc PrintChart {out} {
 	global Schedule
+	global Title 
+	puts $out {\documentclass{article}
+
+	 \usepackage {color}
+
+	 \begin {document}
+
+	 \begin {center}
+	 \Huge}
+ puts $out $Title
+ puts $out {\end {center}
+	}
 	puts $out {\begin{tabular}{|c|c|c|c|c|c|}
 	\hline
 	}
@@ -117,17 +132,6 @@ proc PrintChart {out} {
 ###
 proc Setup {out} {
 	global Schedule
-	puts $out {\documentclass{article}
-
-	 \usepackage {color}
-
-	 \begin {document}
-
-	 \begin {center}
-	 \Huge
-	Christopher's Schedule
-	 \end {center}
-	}
 	#Set up the array
 	set Schedule("0") [list " "]
 	set Schedule(Mon) "Monday"
@@ -186,10 +190,14 @@ if {$flags(o) != ""} {
 	set Out stdout 
 }
 
+set Title "Schedule"
+
+#Now do the actual formatting
 Setup $Out
 ReadFile $In $Out
 PrintChart $Out
 
+#And close the streams, if I can
 if {$Out != "stdout"} {
 	close $Out
 }
