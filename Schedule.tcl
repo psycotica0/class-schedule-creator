@@ -6,8 +6,9 @@
 #	in: This is a handle to an open input file.
 #	out: This is a handle to an open output file
 ###
-proc ReadFile {in out} {
+proc ReadFile {in} {
 	global Title
+	global Courses
 	set currentCourse ""
 	foreach line [split [read $in] \n] {
 		if {[regexp {^#} $line]} {
@@ -15,14 +16,15 @@ proc ReadFile {in out} {
 			continue
 		} elseif {[regexp {^[^\n;]+;[^\n;]+;[^\n;]+$} $line]} {
 			#This is the start of a new course
-			foreach {Name Command Colour} [split $line ";"] {}
-			set currentCourse $Command
+			foreach {Name UId Colour} [split $line ";"] {}
+			set currentCourse $UId
 			if {[string equal $Colour black]} {
-				set TextColour {\color{white}}
+				set TextColour {white}
 			} else {
 				set TextColour ""
 			}
-			puts $out "\\newcommand\{\\$Command\}\{\\colorbox\{$Colour\}\{$TextColour$Name\}\}"
+			#Add this Course to the list of courses
+			lappend Courses [list $Name $UId $Colour $TextColour]
 		} elseif {[regexp {^[\t ]} $line]} {
 			#This is a new date for the current course
 			set lineM [string trim $line]
@@ -31,6 +33,7 @@ proc ReadFile {in out} {
 			set time [split [lindex $broken 1] "-"]
 			AddTime $currentCourse $dates [lindex $time 0] [lindex $time 1]
 		} elseif {[regexp {\w+} $line]} {
+			#This is a title
 			set Title $line
 		}
 	}
@@ -55,7 +58,7 @@ proc AddTime {command dates start end} {
 	foreach day $dates {
 		#Foreach day set the precalculated blocks to the given command
 		for {set i $sBlock} {$i <= $eBlock} {incr i} {
-			set Schedule($day) [lreplace $Schedule($day) $i $i "\\$command"]
+			set Schedule($day) [lreplace $Schedule($day) $i $i "$command"]
 		}
 	}
 }
@@ -69,24 +72,31 @@ proc AddTime {command dates start end} {
 #	end: This is the end time
 ###
 proc TimeIndex {start end} {
- regexp {(\d+):(\d+)} $start Mat sH sM
- regexp {(\d+):(\d+)} $end Mat eH eM
- #foreach {sH sM} [split $start ":"] {}
- #foreach {eH eM} [split $end ":"] {}
- foreach c [list s e] {
-	set Command "set ${c}H \[expr \{\$${c}H+12\}\]"
- 	if "\$${c}H >=1 && \$${c}H <8" $Command
-	 #First set the index to the hours minus 8 (The first time) times 2 to (to skip all the 30s)
-	 set Command "set ${c}Index \[expr \{(\$${c}H-8)*2\}\]"
-	 #Then, if the minutes are larger than 30, add another block
-	 set Command2 [list if "\$${c}M>=30" "incr ${c}Index"]
-	 eval $Command
-	 eval $Command2
-	 #Finally, add 1 to them both to account for the title bar
-	 eval [list incr ${c}Index]
- }
- #Put them in a list and return it
- return [list $sIndex $eIndex]
+	#Pull the time apart
+	regexp {(\d+):(\d+)} $start Mat sH sM
+	regexp {(\d+):(\d+)} $end Mat eH eM
+
+	#Then for both the start and end time
+	foreach c [list s e] {
+		#This command increases a time by 12 hours
+		set Command "set ${c}H \[expr \{\$${c}H+12\}\]"
+
+		#If a time is between 1 and 8, add 12, to make 24h time
+		if "\$${c}H >=1 && \$${c}H <8" $Command
+
+		#First set the index to the hours minus 8 (The first time) times 2 to (to skip all the 30s)
+		#The reason it is done with eval, is because I have a variable variable in there.
+		set Command "set ${c}Index \[expr \{(\$${c}H-8)*2\}\]"
+
+		#Then, if the minutes are larger than 30, add another block
+		set Command2 [list if "\$${c}M>=30" "incr ${c}Index"]
+		eval $Command
+		eval $Command2
+		#Finally, add 1 to them both to account for the title bar
+		eval [list incr ${c}Index]
+	}
+	#Put them in a list and return it
+	return [list $sIndex $eIndex]
 }
 
 ###
@@ -97,6 +107,8 @@ proc TimeIndex {start end} {
 proc PrintChart {out} {
 	global Schedule
 	global Title 
+	global Courses
+	#Set up the document
 	puts $out {\documentclass{article}
 
 	 \usepackage {color}
@@ -105,32 +117,55 @@ proc PrintChart {out} {
 
 	 \begin {center}
 	 \Huge}
+ #Then output the title
  puts $out $Title
+ #And end the title section
  puts $out {\end {center}
 	}
+	#Now, setup each course command
+	foreach Course $Courses {
+		foreach {Name Command Colour TextColour} $Course {}
+		if {$TextColour !="" } {
+			puts $out "\\newcommand\{\\$Command\}\{\\colorbox\{$Colour\}\{\\color{$TextColour}$Name\}\}"
+		} else {
+			puts $out "\\newcommand\{\\$Command\}\{\\colorbox\{$Colour\}\{$Name\}\}"
+		}
+	}
+	#Start the table
 	puts $out {\begin{tabular}{|c|c|c|c|c|c|}
 	\hline
 	}
+	#For each item in the first column
 	for {set i 0} {$i < [llength $Schedule("0")] } {incr i} {
 		#Print the time
 		puts -nonewline $out [lindex $Schedule("0") $i]
+		#Then go through each day of the week
 		foreach column [list Mon Tues Wed Thurs Fri] {
-			puts -nonewline $out "&[lindex $Schedule($column) $i]"
+			#Get the value from this time on this dau
+			set Value [lindex $Schedule($column) $i]
+			if {$i > 0} {
+				#This is a row value, which is a command in tex
+				if {$Value != ""} {
+					puts -nonewline $out "&\\$Value"
+				}
+			} else {
+				#This is a row header
+				puts -nonewline $out "&$Value"
+			}
 		}
+		#End the row
 		puts $out {\\\hline}
 	}
+	#End the table, and the document
 	puts $out {\end{tabular}
 	\end{document}
 	}
 }
 
 ###
-#Setup: This starts the output by adding the top parts of the file.
-#	It also initializes the array
-#
-#	out: This is a handle to an open output file
+#Setup: This initializes the array
 ###
-proc Setup {out} {
+proc Setup {} {
 	global Schedule
 	#Set up the array
 	set Schedule("0") [list " "]
@@ -190,11 +225,16 @@ if {$flags(o) != ""} {
 	set Out stdout 
 }
 
+#This is the title that goes at the top of the file.
 set Title "Schedule"
 
+#This is a list of course info.
+# It is a list of lists, where each element is of the form [list Name UId Colour TextColour]
+set Courses [list ]
+
 #Now do the actual formatting
-Setup $Out
-ReadFile $In $Out
+Setup 
+ReadFile $In
 PrintChart $Out
 
 #And close the streams, if I can
