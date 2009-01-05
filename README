@@ -1,12 +1,14 @@
-This program reads in a file called Schedule.txt in the current directory and outputs Schedule.tex.
+This program takes in a description of classes and their times and outputs a nice table.
 
-This Schedule.tex file is a table that shows the stuff scheduled.
+It can output in tex format (For compiling into pdf) and html.
 
+The script takes input from stdin, and outputs to stdout in html form by default.
 
-It's pretty raw, but that's because I just wrote it to be for me.
-You can have it if you like.
+The -f flag optionally specifies an input file.
+The -o flag optionally specifies an output file.
+The -t flag specifies the output format. It is html by default.
 
-Schedule.txt Syntax:
+Input Syntax:
 Name To Be Displayed;uniqueId;colour
 	Mon,Tues;10:00-12:20
 
@@ -14,7 +16,7 @@ Where I don't think the uniqueId can have spaces or any weird characters.
 I think internally it is used as a variable name...
 Colour can be white black(with white text) red green blue cyan magenta yellow
 
-Example Schedule.txt:
+Example Input:
 CS 246;cs;green
 	Tues,Thurs;10:00-11:20
 	Mon;11:30-12:20
