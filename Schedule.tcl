@@ -100,11 +100,11 @@ proc TimeIndex {start end} {
 }
 
 ###
-#PrintChart: This is the part that prints out the chart and ends the file
+#PrintChart:tex: This is the part that prints out the chart in tex format.
 #
 #	out: This is the open handle to the output file
 ###
-proc PrintChart {out} {
+proc PrintChart:tex {out} {
 	global Schedule
 	global Title 
 	global Courses
@@ -160,6 +160,74 @@ proc PrintChart {out} {
 	puts $out {\end{tabular}
 	\end{document}
 	}
+}
+
+###
+#PrintChart:html: This prints out the chart as an HTML document
+#
+#out: Handle to the output file.
+###
+proc PrintChart:html {out} {
+	global Schedule
+	global Title 
+	global Courses
+	puts $out "<html>
+	<head>
+		<title>
+			$Title
+		</title>"
+	puts $out "<style type=\"text/css\">"
+	puts $out "table {border: thin solid black}"
+	puts $out "td {border: thin solid black}"
+	puts $out ".time {font-weight:bold}"
+	puts $out ".day {font-wight:bold}"
+	#For each Course
+	foreach Course $Courses {
+		foreach {Name Command Colour TextColour} $Course {}
+		#Make a Style
+		puts -nonewline $out ".$Command {background: $Colour;"
+		if {$TextColour != ""} {
+			puts -nonewline $out "color:$TextColour;"
+		}
+		puts $out "}"
+		#And make the map from Id to Text to be used in output
+		set Macro($Command) $Name
+	}
+	puts $out "</style>"
+	puts $out "	</head>
+	<body>
+		<center><h1>$Title</h1></center>
+		<body>"
+	puts $out "<table>"
+	#For each item in the first column
+	for {set i 0} {$i < [llength $Schedule("0")] } {incr i} {
+		#Start the row
+		puts $out "<tr>"
+		#Print the time
+		set time [lindex $Schedule("0") $i]
+		puts $out "<td class='time'> $time </td>"
+		#Then go through each day of the week
+		foreach column [list Mon Tues Wed Thurs Fri] {
+			#Get the value from this time on this dau
+			set Value [lindex $Schedule($column) $i]
+			if {$i > 0} {
+				#This is a row value
+				if {$Value != " "} {
+					puts $out "<td class='$Value'> $Macro($Value) </td>"
+				} else {
+					puts $out "<td></td>"
+				}
+			} else {
+				#This is a row header
+				puts $out "<td class='day'> $Value </td>"
+			}
+		}
+		#End the row
+		puts $out "</tr>"
+	}
+	puts $out "</table>"
+	puts $out "</body>"
+	puts $out "</html>"
 }
 
 ###
@@ -233,9 +301,20 @@ set Title "Schedule"
 set Courses [list ]
 
 #Now do the actual formatting
+switch $flags(t) {
+	html {
+		set Command "PrintChart:html"
+	} tex {
+		set Command "PrintChart:tex"
+	} default {
+		puts stderr "Unrecognized Output Type \"$flags(t)\"."
+		exit
+	}
+	
+}
 Setup 
 ReadFile $In
-PrintChart $Out
+$Command $Out
 
 #And close the streams, if I can
 if {$Out != "stdout"} {
