@@ -177,8 +177,8 @@ proc PrintChart:html {out} {
 			$Title
 		</title>"
 	puts $out "<style type=\"text/css\">"
-	puts $out "table {border: thin solid black}"
-	puts $out "td {border: thin solid black; padding:0 ; margin:0}"
+	puts $out "table {border: thin solid black;}"
+	puts $out "td {border: thin solid black;}"
 	puts $out ".time {font-weight:bold}"
 	puts $out ".day {font-weight:bold}"
 	#For each Course
@@ -198,7 +198,7 @@ proc PrintChart:html {out} {
 	<body>
 		<center><h1>$Title</h1></center>
 		<body>"
-	puts $out "<center><table>"
+	puts $out "<center><table cellspacing=\"0\">"
 	#For each item in the first column
 	for {set i 0} {$i < [llength $Schedule("0")] } {incr i} {
 		#Start the row
