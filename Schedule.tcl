@@ -178,7 +178,7 @@ proc PrintChart:html {out} {
 		</title>"
 	puts $out "<style type=\"text/css\">"
 	puts $out "table {border: thin solid black}"
-	puts $out "td {border: thin solid black}"
+	puts $out "td {border: thin solid black; padding:0 ; margin:0}"
 	puts $out ".time {font-weight:bold}"
 	puts $out ".day {font-weight:bold}"
 	#For each Course
@@ -215,7 +215,7 @@ proc PrintChart:html {out} {
 				if {$Value != " "} {
 					puts $out "<td class='$Value'> $Macro($Value) </td>"
 				} else {
-					puts $out "<td></td>"
+					puts $out "<td>&nbsp;</td>"
 				}
 			} else {
 				#This is a row header
